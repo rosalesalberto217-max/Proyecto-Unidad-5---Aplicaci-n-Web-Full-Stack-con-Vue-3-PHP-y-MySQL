@@ -1,41 +1,58 @@
 <?php
 
-require_once __DIR__ . '/database.php';
+function validarToken($pdo) {
+    $authHeader = null;
 
-$headers = getallheaders();
+    // Try multiple sources for the Authorization header
+    if (function_exists('apache_request_headers')) {
+        $headers = apache_request_headers();
+        if (isset($headers['Authorization'])) {
+            $authHeader = $headers['Authorization'];
+        } elseif (isset($headers['authorization'])) {
+            $authHeader = $headers['authorization'];
+        }
+    }
 
-if (!isset($headers['Authorization'])) {
+    if (!$authHeader && isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+    }
 
-    echo json_encode([
-        "success" => false,
-        "message" => "Token requerido"
-    ]);
+    if (!$authHeader && isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
 
-    exit;
-}
+    if (!$authHeader || !preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Token inválido o expirado'
+        ]);
+        exit;
+    }
 
-$token = str_replace(
-    'Bearer ',
-    '',
-    $headers['Authorization']
-);
+    $token = $matches[1];
 
-$sql = "SELECT * FROM usuarios
-        WHERE token = ?
-        AND token_expiracion > NOW()";
+    try {
+        $stmt = $pdo->prepare('SELECT id, nombre_de_usuario, foto FROM usuarios WHERE token = ? AND token_expiracion > NOW()');
+        $stmt->execute([$token]);
+        $usuario = $stmt->fetch();
 
-$stmt = $pdo->prepare($sql);
+        if (!$usuario) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Token inválido o expirado'
+            ]);
+            exit;
+        }
 
-$stmt->execute([$token]);
-
-$usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$usuario) {
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Token inválido"
-    ]);
-
-    exit;
+        return $usuario;
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error al validar el token'
+        ]);
+        exit;
+    }
 }

@@ -1,24 +1,26 @@
 <?php
 
-$host = "localhost";
-$db = "agenda_app";
-$user = "root";
-$pass = "";
+$host = 'localhost';
+$dbname = 'contactos_app';
+$username = 'root';
+$password = '';
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
+
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
 
 try {
-
-    $pdo = new PDO(
-        "mysql:host=$host;dbname=$db;charset=utf8",
-        $user,
-        $pass
-    );
-
-    $pdo->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
-    );
-
-} catch(PDOException $e) {
-
-    die($e->getMessage());
+    $pdo = new PDO($dsn, $username, $password, $options);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error de conexión a la base de datos'
+    ]);
+    exit;
 }

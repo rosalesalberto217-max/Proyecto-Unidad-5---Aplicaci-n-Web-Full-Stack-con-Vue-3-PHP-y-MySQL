@@ -1,8 +1,60 @@
-export async function getApiUrl() {
+import axios from 'axios'
 
+let cachedConfig = null
+
+export async function loadConfig() {
+  if (cachedConfig) return cachedConfig
+  try {
     const response = await fetch('/config.json')
-
-    const config = await response.json()
-
-    return config.API_URL
+    cachedConfig = await response.json()
+    return cachedConfig
+  } catch (error) {
+    console.error('Error cargando configuración:', error)
+    cachedConfig = { API_URL: 'http://localhost/Proyecto_U5_web/backend/api' }
+    return cachedConfig
+  }
 }
+
+export function getApiUrl() {
+  return cachedConfig?.API_URL || 'http://localhost/Proyecto_U5_web/backend/api'
+}
+
+const api = axios.create({
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+})
+
+// Request interceptor: inject token + set baseURL dynamically
+api.interceptors.request.use(async (config) => {
+  if (!cachedConfig) {
+    await loadConfig()
+  }
+  config.baseURL = cachedConfig.API_URL
+
+  const token = localStorage.getItem('auth_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+}, (error) => {
+  return Promise.reject(error)
+})
+
+// Response interceptor: handle 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+export default api

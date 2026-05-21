@@ -1,81 +1,26 @@
-DROP DATABASE IF EXISTS agenda_app;
-
-CREATE DATABASE agenda_app;
-
-USE agenda_app;
-
--- =========================
--- TABLA USUARIOS
--- =========================
+CREATE DATABASE IF NOT EXISTS contactos_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE contactos_app;
 
 CREATE TABLE usuarios (
-
-    id INT PRIMARY KEY AUTO_INCREMENT,
-
-    nombre_de_usuario VARCHAR(50) UNIQUE,
-
-    password VARCHAR(255),
-
-    foto VARCHAR(255),
-
-    token VARCHAR(255),
-
-    token_expiracion DATETIME,
-
-    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre_de_usuario VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  foto VARCHAR(255) NULL,
+  token VARCHAR(255) NULL,
+  token_expiracion DATETIME NULL,
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- =========================
--- TABLA CONTACTOS
--- =========================
 
 CREATE TABLE contactos (
-
-    id INT PRIMARY KEY AUTO_INCREMENT,
-
-    usuario_id INT,
-
-    nombre VARCHAR(100),
-
-    apellido VARCHAR(100),
-
-    telefono VARCHAR(20),
-
-    email VARCHAR(120),
-
-    direccion VARCHAR(255),
-
-    notas TEXT,
-
-    foto VARCHAR(255),
-
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (usuario_id)
-    REFERENCES usuarios(id)
-    ON DELETE CASCADE
-
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  nombre VARCHAR(100) NOT NULL,
+  apellido VARCHAR(100) NULL,
+  telefono VARCHAR(20) NOT NULL,
+  email VARCHAR(120) NULL,
+  direccion VARCHAR(255) NULL,
+  notas TEXT NULL,
+  foto VARCHAR(255) NULL,
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
-
--- =========================
--- USUARIO DE PRUEBA
--- =========================
-
-INSERT INTO usuarios (
-
-    nombre_de_usuario,
-    password
-
-)
-
-VALUES (
-
-    'admin',
-
-    '$2y$10$9L5T0A7YjW5M6A7QwJwS1e7y6l0X9W9zj6m7kV0uP3aT9gY8HfK1S'
-
-);
-
--- contraseña:
--- 123456

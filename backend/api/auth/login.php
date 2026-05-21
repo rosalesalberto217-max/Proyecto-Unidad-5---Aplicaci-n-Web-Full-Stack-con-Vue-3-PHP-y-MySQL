@@ -1,80 +1,56 @@
 <?php
 
-require_once '../config/cors.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/cors.php';
+require_once __DIR__ . '/../config/database.php';
 
-$data = json_decode(
-    file_get_contents("php://input"),
-    true
-);
+try {
+    $data = json_decode(file_get_contents('php://input'), true);
 
-$usuario = $data['nombre_de_usuario'];
+    $nombre_de_usuario = isset($data['nombre_de_usuario']) ? trim($data['nombre_de_usuario']) : '';
+    $password = isset($data['password']) ? $data['password'] : '';
 
-$password = $data['password'];
+    if (empty($nombre_de_usuario) || empty($password)) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'El nombre de usuario y la contraseña son obligatorios'
+        ]);
+        exit;
+    }
 
-$sql = "SELECT * FROM usuarios
-        WHERE nombre_de_usuario = ?";
+    $stmt = $pdo->prepare('SELECT id, nombre_de_usuario, password, foto FROM usuarios WHERE nombre_de_usuario = ?');
+    $stmt->execute([$nombre_de_usuario]);
+    $usuario = $stmt->fetch();
 
-$stmt = $pdo->prepare($sql);
+    if (!$usuario || !password_verify($password, $usuario['password'])) {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Credenciales inválidas'
+        ]);
+        exit;
+    }
 
-$stmt->execute([$usuario]);
+    $token = bin2hex(random_bytes(32));
+    $expiracion = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if(!$user) {
+    $stmt = $pdo->prepare('UPDATE usuarios SET token = ?, token_expiracion = ? WHERE id = ?');
+    $stmt->execute([$token, $expiracion, $usuario['id']]);
 
     echo json_encode([
-        "success" => false,
-        "message" => "Usuario no encontrado"
+        'success' => true,
+        'token' => $token,
+        'usuario' => [
+            'id' => (int) $usuario['id'],
+            'nombre_de_usuario' => $usuario['nombre_de_usuario'],
+            'foto' => $usuario['foto']
+        ]
     ]);
 
-    exit;
-}
-
-if(!password_verify(
-    $password,
-    $user['password']
-)) {
-
+} catch (Exception $e) {
+    http_response_code(500);
     echo json_encode([
-        "success" => false,
-        "message" => "Contraseña incorrecta"
+        'success' => false,
+        'message' => 'Error en el servidor'
     ]);
-
-    exit;
 }
-
-$token = bin2hex(random_bytes(32));
-
-$expira = date(
-    'Y-m-d H:i:s',
-    strtotime('+7 days')
-);
-
-$update = $pdo->prepare(
-    "UPDATE usuarios
-    SET token = ?,
-        token_expiracion = ?
-    WHERE id = ?"
-);
-
-$update->execute([
-    $token,
-    $expira,
-    $user['id']
-]);
-
-echo json_encode([
-    "success" => true,
-    "token" => $token,
-
-    "usuario" => [
-
-        "id" => $user['id'],
-
-        "nombre_de_usuario" =>
-            $user['nombre_de_usuario'],
-
-        "foto" => $user['foto']
-    ]
-]);
