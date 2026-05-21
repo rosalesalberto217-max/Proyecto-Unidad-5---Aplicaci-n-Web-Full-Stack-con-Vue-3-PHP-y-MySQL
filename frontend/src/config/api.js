@@ -10,13 +10,13 @@ export async function loadConfig() {
     return cachedConfig
   } catch (error) {
     console.error('Error cargando configuración:', error)
-    cachedConfig = { API_URL: 'http://localhost:8080/Proyecto_U5_web/backend/api' }
+    cachedConfig = { API_URL: 'https://alberto0o0.alwaysdata.net/api' }
     return cachedConfig
   }
 }
 
 export function getApiUrl() {
-  return cachedConfig?.API_URL || 'http://localhost:8080/Proyecto_U5_web/backend/api'
+  return cachedConfig?.API_URL || 'https://alberto0o0.alwaysdata.net/api'
 }
 
 const api = axios.create({
