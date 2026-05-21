@@ -1,10 +1,10 @@
 <?php
 
-$host = '127.0.0.1';
-$dbname = 'contactos_app';
-$username = 'root';
-$password = '';
-$charset = 'utf8mb4';
+$host = 'mysql-alberto0o0.alwaysdata.net';
+$dbname = 'alberto0o0_contactos_usuario';
+$username = 'alberto0o0';
+$password = '30septiembre';
+$charset = 'utf8';
 
 $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
 
